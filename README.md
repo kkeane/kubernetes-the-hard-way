@@ -21,11 +21,50 @@ documentation hard to follow because he relied heavily on Google's environment.
 - Use RBAC and avoid ABAC. Kelsey Hightower did this as well, but some other
 versions don't.
 - Focus more heavily on explaining the networking part, as this what I have been
-struggling with the most. 
+struggling with the most.
+- I will also try to explain each step.
 
 My environment
 ---
+The environment I am using to develop this is based on VirtualBox, Vagrant and
+Ansible, but should hopefully work on any environment. I am not sharing the
+complete Ansible role as this is proprietary and may not always make sense in
+other environments, but I may include snippets, such as tasks and templates.
 
+The cluster will run on CentOS 7. I do not use RHEL 7 here even though I have
+access to it, because RedHat does not support any form of Kubernetes other than
+their proprietary version OpenShift.
+
+Prerequisites
+---
+
+To do this with virtual machines, you will need a very beefy host. I am using a
+system with 32 GB of memory and a 4 core CPU. This appears to be the minimum
+that will work.
+
+If you have a smaller system, you may eliminate the separate systems for the
+certificate authority, etcd, and the front end server, and use a single control
+plane server. You will lose some of the benefits such as high availability, but
+it should work.
+
+Request for comments
+---------
+
+My goal is to learn to set up a production-quality cluster, but this document
+will not be perfect, and I do not recommend actually putting the resulting
+system into production. Please feel free to submit suggestions for improvement
+as an issue, or as a pull request.
+
+The parts of this document
+---
+
+[architecture.md](Architecture)
+[pki.md](Public Key Infrastructure)
+[etcd.md](The etcd cluster)
+[front.md](The front end server/load balancer)
+[cp.md](Control Plane)
+[worker.md](The worker nodes)
+[cluster.md](Cluster-wide configuration)
 
 Resources
 ---------
