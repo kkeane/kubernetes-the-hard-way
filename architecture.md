@@ -101,3 +101,15 @@ worker node creates iptable/netfilter entries that translate these virtual
 service IP addresses to actual physical IP addresses. But there are many other
 mechanisms that can do the same thing.
 
+## The Public Key Infrastructure
+
+We are using cfssl as a certificate authority for most certificates. Each
+API server/Controller Manager will also be configured as an intermediate CA
+for the worker nodes to automatically roll their certificates.
+
+Most certificates will have a very short validity (just a few days). This avoids
+having to deal with revocations in case one of the certificates is compromised,
+and it also means that the certificates have to be rolled over frequently. At
+least for learning purposes, this helps investigate one more important aspect of
+running a cluster.
+

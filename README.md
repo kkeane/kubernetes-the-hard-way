@@ -18,6 +18,7 @@ that will:
  version of Kubernetes the Hard Way. I found some of Kelsey Hightower's
 documentation hard to follow because he relied heavily on Google's environment.
 - create a full PKI. Thanks goes to [Mike Newswanger](https://www.mikenewswanger.com/posts/2018/kubernetes-pki/)
+- support certificate rollover.
 - Use RBAC and avoid ABAC. Kelsey Hightower did this as well, but some other
 versions don't.
 - Focus more heavily on explaining the networking part, as this what I have been
