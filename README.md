@@ -58,10 +58,10 @@ as an issue, or as a pull request.
 The parts of this document
 ---
 
-- [Architecture](blob/master/architecture.md)
-- [Public Key Infrastructure](blob/master/pki.md)
-- [The etcd cluster](blob/master/etcd.md)
-- [The front end server/load balancer](blob/master/front.md)
+- [Architecture](./architecture.md)
+- [Public Key Infrastructure](./pki.md)
+- [The etcd cluster](./etcd.md)
+- [The front end server/load balancer](./front.md)
 - [cp.md](Control Plane)
 - [worker.md](The worker nodes)
 - [cluster.md](Cluster-wide configuration)
