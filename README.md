@@ -58,13 +58,13 @@ as an issue, or as a pull request.
 The parts of this document
 ---
 
-[architecture.md](Architecture)
-[pki.md](Public Key Infrastructure)
-[etcd.md](The etcd cluster)
-[front.md](The front end server/load balancer)
-[cp.md](Control Plane)
-[worker.md](The worker nodes)
-[cluster.md](Cluster-wide configuration)
+- [architecture.md](Architecture)
+- [pki.md](Public Key Infrastructure)
+- [etcd.md](The etcd cluster)
+- [front.md](The front end server/load balancer)
+- [cp.md](Control Plane)
+- [worker.md](The worker nodes)
+- [cluster.md](Cluster-wide configuration)
 
 Resources
 ---------
