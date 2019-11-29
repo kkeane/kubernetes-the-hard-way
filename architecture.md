@@ -6,19 +6,17 @@ Kubernetes is a very complex system, and the setup reflects that.
 The cluster described in this document will consist of ten individual servers,
 or hosts in Kubernetes parlance:
 
-- One certificate authority
-- An etcd cluster consisting of three servers. For production, especially in
-larger systems, five servers are recommended.
-- A front-end server/load balancer
-- Two redundant control plane systems. You should be able to add as many as you
-want.
-- Two worker nodes. You should be able to add as many as you want.
-- An admin node. This will only have kubectl set up and configured. In a
-real-life scenario, this would be your desktop workstation.
+Name   | Count | Memory | purpose/notes
+----------------------
+ca     | 1     | 1 GB   | Certificate Authority. Should only be one.
+etc    | 3     | 1 GB   | etcd server. Can be any odd number. For production use, five is recommended
+front  | 1     | 1 GB   | Front end load balancer for API server.
+cp     | 2     | 2 GB   | Can be any number
+worker | 2     | 2 GB   | Can be any number
+admin  | 1     | 1 GB   | Desktop workstation. Can be any number. Keep at a minimum for security.
 
-The control plane and worker node systems need to 2GB of memory, all other
-host need 1 GB. Of course, in production you would probably want to give them
-more memory.
+Of course, in production you would probably want to give the hosts more memory
+than specified here.
 
 Each host will need one NIC with an IP address that can reach all the other
 hosts without NAT in between.
