@@ -58,8 +58,8 @@ as an issue, or as a pull request.
 The parts of this document
 ---
 
-- [architecture.md](Architecture)
-- [pki.md](Public Key Infrastructure)
+- [Architecture](architecture.md)
+- [Public Key Infrastructure](pki.md)
 - [etcd.md](The etcd cluster)
 - [front.md](The front end server/load balancer)
 - [cp.md](Control Plane)
