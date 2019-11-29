@@ -328,9 +328,94 @@ On each client, put the certificate authority's certificate into
 /etc/pki/tls/certs/ca.pem.
 
 Next, create a PKI directory for our system. On most of our servers, this will
-be /etc/kubernetes/pki . On the etcd cluster, it will be /etc/etcd/pki
+be /etc/kubernetes/pki . On the etcd cluster, it will be /etc/etcd/pki. This
+directory should have 0700 permissions, and be owned by the Linux user that
+will run the service (in our case, the user names will be either kubernetes or
+etcd).
 
-TODO: finish this section.
+You will need to create a request configuration file that contains information
+about your Certificate Authority infrastructure and the profile you will be
+requesting. It will also include the CA authentication token, so this file is
+sensitive. I usually put it into the global PKI private directory. Create a file
+/etc/pki/tls/private/request-profile.json with the following content:
+
+```
+{
+    "auth_keys": {
+        "default": {
+            "key": "a63268a89b22f40431d9d606aa47031e",
+            "type": "standard"
+        }
+    },
+    "remotes": {
+        "ca_server": "https://ca.vagrant:8888"
+    },
+    "signing": {
+        "default": {
+            "auth_remote": {
+                "auth_key": "default",
+                "remote": "ca_server"
+            }
+        }
+    }
+}
+```
+
+Of course, substitute your own authorization key.
+
+The remotes line specifies the actual CA server.
+
+On the control plane servers only, create a similar second file with the
+authentication token for the intermediate ca certificates.
+
+Create a CSR as a json file. For instance, to request the server certificate
+for the API server, you may create a file such as
+/etc/kubernetes/pki/cp1-api.csr.json that lists all the host names under which
+the API server could be reachable:
+
+```
+{
+    "CN": "cp1",
+    "hosts": [
+        "front.vagrant",
+        "172.28.128.239",
+        "cp1.vagrant"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "US",
+            "L": "San Diego",
+            "O": "My Company",
+            "OU": "Kubernetes the hard way",
+            "ST": "California"
+        }
+    ]
+}
+```
+
+For client certificates, you still need to specify one host even though it will
+be ignored. You must specify the Kubernetes user name (the user name RBAC needs)
+in the CN field, and the Kubernetes group name in the O field.
+
+Now you are ready to request the actual certificate:
+
+```
+  cd /etc/kubernetes/pki
+
+  /usr/local/sbin/cfssl gencert -config=request-profile.json -profile=server -tls-remote-ca=/etc/pki/tls/certs/ca.cert cp1-api.csr.json | \
+    /usr/local/sbin/cfssljson -bare cp1-api
+```
+
+This will create a few files. The two important ones are cp1-api.pem and
+cp1-api-key.pem. Change the ownership so that the correct user that needs it
+has access to them (in our case, that will be either etcd, or kubernetes).
+
+For client or peer certificates, specify the correct profile in -profile. We
+will later wrap those certificates in a kubeconfig file.
 
 ### Secure the server:
 
