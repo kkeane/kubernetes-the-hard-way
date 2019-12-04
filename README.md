@@ -63,9 +63,9 @@ The parts of this document
 - [Public Key Infrastructure](./pki.md)
 - [The etcd cluster](./etcd.md)
 - [The front end server/load balancer](./front.md)
-- [cp.md](Control Plane)
-- [worker.md](The worker nodes)
-- [cluster.md](Cluster-wide configuration)
+- [Control Plane](./cp.md)
+- [The worker nodes](./worker.md)
+- [Cluster-wide configuration](./cluster.md)
 
 Resources
 ---------
