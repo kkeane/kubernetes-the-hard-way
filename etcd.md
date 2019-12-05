@@ -213,7 +213,7 @@ Then, on any of the nodes, run:
 
 etcd is backed up with the following command:
 
-etcdctl snapshot save <filename>.db
+    etcdctl snapshot save <filename>.db
 
 In a production cluster, you should run this command in
 a cron script, and make sure that the generated file is
