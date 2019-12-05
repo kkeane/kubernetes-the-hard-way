@@ -65,21 +65,157 @@ Copy the resulting files etcd and etcdctl to /usr/local/sbin
 
 ## Create certificates
 
-TODO
+Create a request config file as described in the PKI section, and place it in
+/etc/pki/tls/private/request-config.json
+
+Communication between the etcd servers, as well as communication between clients, needs to be
+encrypted. Since communication between etcd nodes can go in either direction, we are using a
+peer certificate that can act as both server and client.
+
+On each etcd node, create the following CSR file (substituting the correct
+host name in the CN) in /etc/etcd/pki/<nodename>-csr.json
+
+```
+{
+    "CN": "etcd1",
+    "hosts": [
+        "etcd1.vagrant",
+        "etcd2.vagrant",
+        "etcd3.vagrant",
+        "172.28.128.253",
+        "172.28.128.252",
+        "172.28.128.251"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "US",
+            "L": "San Diego",
+            "O": "University of San Diego",
+            "OU": "Kubernetes CA for vagtestcluster",
+            "ST": "California"
+        }
+    ]
+}
+```
+
+Then use cfssl to generate the certificate:
+
+```
+cd /etc/etcd/pki
+/usr/local/sbin/cfssl gencert \
+  -config=/etc/pki/tls/private/request-config.json \
+  -profile=peer etcd1-csr.json | \
+/usr/local/sbin/cfssljson -bare etcd1
+```
+
+### Certificate rollover:
+
+Re-run this command a few days before the certificate expires, and then
+restart the etcd service.
+
+Only restart one etcd node at a time to ensure high availability.
 
 ## Create the etcd configuration file
 
-TODO
+Create the following file in /etc/etcd/etcd.conf.yml. Update the
+node name and IP addresses according to the node name and the
+information you gathered earlier.
+
+**Important**: if you are adding a node to an existing cluster,
+you must change the entry "initial-cluster-state" to "existing"
+
+```
+name:     etcd1
+data-dir: /var/lib/etcd
+listen-peer-urls:   https://172.28.128.253:2380
+listen-client-urls: https://0.0.0.0:2379
+logger: zap
+log-level: info
+
+advertise-client-urls: https://etcd1.vagrant:2379
+initial-advertise-peer-urls: https://etcd1.vagrant:2380
+initial-cluster-token: etcd-cluster-0
+initial-cluster: etcd1=https://etcd1.vagrant:2380,etcd2=https://etcd2.vagrant:2380,etcd3=https://etcd3.vagrant:2380
+initial-cluster-state: new
+
+client-transport-security:
+  trusted-ca-file: /etc/pki/tls/certs/ca.pem
+  cert-file: /etc/etcd/pki/etcd1.pem
+  key-file: /etc/etcd/pki/etcd1-key.pem
+  client-cert-auth: True
+
+peer-transport-security:
+  trusted-ca-file: /etc/pki/tls/certs/ca.pem
+  cert-file: /etc/etcd/pki/etcd1.pem
+  key-file: /etc/etcd/pki/etcd1-key.pem
+  client-cert-auth: True
+```
 
 ## Set up the configuration environment variables for etcdctl
 
-TODO
+The command line interface to etcd is called etcdctl. It is configured with
+environment variables. As long as you only need to connect to one etcd
+cluster, the easiest way to do this is by putting the following file in
+/etc/profile.d/etcdctl.sh:
+
+```
+export ETCDCTL_CACERT=/etc/pki/tls/certs/ca.pem
+export ETCDCTL_CERT=/etc/etcd/pki/etcd1.pem
+export ETCDCTL_KEY=/etc/etcd/pki/etcd1-key.pem
+export ETCDCTL_ENDPOINTS=etcd1.vagrant:2379,etcd2.vagrant:2379,etcd3.vagrant:2379
+```
+
+This will set the correct environment variable for all users who log on
+to the system.
+
+This will only work on the etcd servers themselves. If you want to administer
+etcd from somewhere else, you must create an additional client certificate for
+that system.
 
 ## Create the systemd unit file for the etcd service
 
-TODO
+The etcd service is fairly trivial. Create the following systemd unit file
+as /etc/systemd/system/etcd.service:
+
+```
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos
+
+[Service]
+User=etcd
+Type=notify
+ExecStart=/usr/local/sbin/etcd --config-file /etc/etcd/etcd.conf.yml
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Start the cluster and perform a smoke check.
+
+On each node, run
+
+    systemctl start etcd
+
+Then, on any of the nodes, run:
+
+    etcdctl member list
+
 
 ## Backing up data
 
-TODO
+etcd is backed up with the following command:
+
+etcdctl snapshot save <filename>.db
+
+In a production cluster, you should run this command in
+a cron script, and make sure that the generated file is
+saved along with your other backups.
 
