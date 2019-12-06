@@ -102,6 +102,12 @@ host name in the CN) in /etc/etcd/pki/<nodename>-csr.json
 }
 ```
 
+**Important**: Due to a bug in the etcd client library, the certificate must
+contain the host names and IP addresses for all etcd nodes, not just the one
+the certificate will be used on. The bug is that the client library will
+always check the certificate against the name of the first etcd server, even
+if it actually connects to one of the other ones.
+
 Then use cfssl to generate the certificate:
 
 ```
@@ -126,7 +132,9 @@ node name and IP addresses according to the node name and the
 information you gathered earlier.
 
 **Important**: if you are adding a node to an existing cluster,
-you must change the entry "initial-cluster-state" to "existing"
+you must change the entry "initial-cluster-state" to "existing".
+You must also regenerate all SSH certificates on all nodes with
+the complete list of host names and IP addresses.
 
 ```
 name:     etcd1
