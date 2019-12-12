@@ -75,7 +75,13 @@ Resources
 - https://github.com/Praqma/LearnKubernetes/blob/master/kamran/Kubernetes-The-Hard-Way-on-BareMetal.md
 - https://github.com/kubernetes/kops/blob/master/docs/install.md
 - https://nixaid.com/deploying-kubernetes-cluster-from-scratch/
+- https://www.usenix.org/sites/default/files/conference/protected-files/lisa19_slides_bernaille.pdf
+
+### Kubernetes networking
 - https://kubernetes.io/blog/2018/07/09/ipvs-based-in-cluster-load-balancing-deep-dive/
+- https://kccna18.sched.com/event/GrWx/container-networking-from-scratch-kristen-jacobs-oracle
+- https://medium.com/google-cloud/understanding-kubernetes-networking-pods-7117dd28727
+- http://ifeanyi.co/posts/linux-namespaces-part-4/
 
 ### PKI and Security
 - https://www.mikenewswanger.com/posts/2018/kubernetes-pki/
