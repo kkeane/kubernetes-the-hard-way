@@ -18,7 +18,8 @@ that will:
  version of Kubernetes the Hard Way. I found some of Kelsey Hightower's
 documentation hard to follow because he relied heavily on Google's environment.
 - create a full PKI. Thanks goes to [Mike Newswanger](https://www.mikenewswanger.com/posts/2018/kubernetes-pki/)
-- support certificate rollover.
+- support certificate rollover. Without implementing that, your cluster will
+inexplicably stop working in a year.
 - Use RBAC and avoid ABAC. Kelsey Hightower did this as well, but some other
 versions don't.
 - Focus more heavily on explaining the networking part, as this what I have been
@@ -33,8 +34,8 @@ complete Ansible role as this is proprietary and may not always make sense in
 other environments, but I may include snippets, such as tasks and templates.
 
 The cluster will run on CentOS 7. I do not use RHEL 7 here even though I have
-access to it, because RedHat does not support any form of Kubernetes other than
-their proprietary version OpenShift.
+access to it, because RedHat does not officially support any form of Kubernetes
+other than their proprietary version OpenShift.
 
 Prerequisites
 ---
@@ -60,6 +61,7 @@ The parts of this document
 ---
 
 - [Architecture](./architecture.md)
+- [Vagrant Notes](./vagrant.md)
 - [Public Key Infrastructure](./pki.md)
 - [The etcd cluster](./etcd.md)
 - [The front end server/load balancer](./front.md)
