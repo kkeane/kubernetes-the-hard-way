@@ -227,3 +227,10 @@ In a production cluster, you should run this command in
 a cron script, and make sure that the generated file is
 saved along with your other backups.
 
+## Other options
+
+etcd can also be set up as a set of pods within Kubernetes itself, as a static
+pod. This setup is beyond the scope of this document.
+
+Next: [The front end server/load balancer](./front.md)
+

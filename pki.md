@@ -442,3 +442,5 @@ run will then also distribute the new tokens to all the hosts that need them.
 This is a simple mechanism for frequently changing tokens, although it could
 conceivably lead to a race condition in rare situations.
 
+Next: [The etcd cluster](./etcd.md)
+

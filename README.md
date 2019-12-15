@@ -6,8 +6,7 @@ Thanks goes to Kelsey Hightower for the [original Kubernetes The Hard Way](https
 and to the many others who have since stepped in his footsteps and created more
 similar sites for various situations.
 
-So why create yet another one?
----
+## So why create yet another one?
 
 This version will focus on some of the aspects Kelsey Hightower simplified for
 the sake of simplicity. In particular, the goal is to create a documentation
@@ -26,8 +25,7 @@ versions don't.
 struggling with the most.
 - I will also try to explain each step.
 
-My environment
----
+## My environment
 The environment I am using to develop this is based on VirtualBox, Vagrant and
 Ansible, but should hopefully work on any environment. I am not sharing the
 complete Ansible role as this is proprietary and may not always make sense in
@@ -37,8 +35,19 @@ The cluster will run on CentOS 7. I do not use RHEL 7 here even though I have
 access to it, because RedHat does not officially support any form of Kubernetes
 other than their proprietary version OpenShift.
 
-Prerequisites
----
+## Software versions
+
+For this project, I am using
+
+- cfssl 1.3
+- etcd 3.4.3
+- Kubernetes 1.16.2
+- containerd (the current version from the official Docker repository)
+- coredns (the current version)
+- cni 0.8.2
+- flannel (the current version)
+
+## Prerequisites
 
 To do this with virtual machines, you will need a very beefy host. I am using a
 system with 32 GB of memory and a 4 core CPU. This appears to be the minimum
@@ -49,16 +58,14 @@ certificate authority, etcd, and the front end server, and use a single control
 plane server. You will lose some of the benefits such as high availability, but
 it should work.
 
-Request for comments
----------
+## Request for comments
 
 My goal is to learn to set up a production-quality cluster, but this document
 will not be perfect, and I do not recommend actually putting the resulting
 system into production. Please feel free to submit suggestions for improvement
 as an issue, or as a pull request.
 
-The parts of this document
----
+## The parts of this document
 
 - [Architecture](./architecture.md)
 - [Vagrant Notes](./vagrant.md)
@@ -67,6 +74,7 @@ The parts of this document
 - [The front end server/load balancer](./front.md)
 - [Control Plane](./cp.md)
 - [The worker nodes](./worker.md)
+- [Networking](./networking.md)
 - [Cluster-wide configuration](./cluster.md)
 
 Resources

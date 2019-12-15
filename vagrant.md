@@ -41,55 +41,43 @@ virtual machines, making adjustments as needed.
 
 ### To make the VMs resolvable through DNS
 
-To allow add VMs to DNS, you have several options:
+To allow add VMs to DNS, we use the the vagrant landrush plugin.
 
-- You can use the vagrant-dns plugin. This is only supported on MacOS, though.
-- You can run a DNS server on your host system. In this case, you must ensure
-that your /etc/resolv.conf file points to that DNS server.
-- You can ask VirtualBox to inject DNS records into the replies it forwards to
-the VMs.
+#### To use the landrush plugin
 
-#### To use the vagrant-dns plugin (not tested)
+Install the Vagrant plugin with this command:
 
-Add the following line to your Vagrantfile
+    vagrant plugin install landrush
 
-    config.dns.tld = "vagrant"
+If you get a compilation error
 
-In each instance stanza in your Vagrantfile, add this line:
+    g++: error: unrecognized command line option ‘-Wimplicit-fallthrough=0’
 
-    instance.dns.patterns = "ca.vagrant"
+Then your version of gcc is too old. On RedHat-style operating systems version
+7, you can install a newer version from the SCL and activate it with
 
+    scl enable devtoolset-7 bash
 
-#### To inject records into VirtualBox
+Details are beyond the scope of this document.
 
-First, you have to enable the NAT DNS Host Resolver mode and disable the NAT
-DNS Proxy mode that conflicts:
+The landrush plugin will require sudo permissions during vagrant runs to
+configure dnsmasq and to start it.
 
-```
-config.vm.provider "virtualbox" do |vm_config, override|
-  vm_config.customize [
-    "modifyvm", :id, "--natdnshostresolver1", "on"
-  ]
-  vm_config.customize [
-    "modifyvm", :id, "--natdnsproxy1", "off"
-  ]
-end
-```
+More detailed instructions about the landrush plugin are at
+https://github.com/vagrant-landrush/landrush
 
-Then for each VM, add two entries such as this:
+In your vagrant file, you must add this line:
 
-```
-vm_config.customize [
-  "setextradata", :id, "VBoxInternal/Devices/e1000/0/LUN#0/AttachedDriver/Config/HostResolverMappings/ca/HostIP", "172.28.128.254"
-]
-vm_config.customize [
-  "setextradata", :id, "VBoxInternal/Devices/e1000/0/LUN#0/AttachedDriver/Config/HostResolverMappings/ca/HostNamePattern", "ca.vagrant"
-]
+    config.landrush.enabled = true
 
-```
+If you are using an internal corporate DNS server, you must also tell landrush
+which DNS server to query next (you should find it in your resolv.conf file):
 
-If you are using a different NIC type than e1000, you may need to adjust the
-string. To find out what the correct string is, create a virtual machine with
-vagrant up, and then look at the VirtualBox log file (probably in
-~/VirtualBox VMs/<machinename>/Logs)
+    config.landrush.upstream '10.1.2.3'
+
+Finally, make sure that landrush knows the TLD that all your VMs are in:
+
+  config.landrush.tld = [ 'vagrant' ]
+
+Next: [Public Key Infrastructure](./pki.md)
 

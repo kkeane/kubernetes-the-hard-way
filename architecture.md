@@ -111,3 +111,6 @@ and it also means that the certificates have to be rolled over frequently. At
 least for learning purposes, this helps investigate one more important aspect of
 running a cluster.
 
+
+Next: [Vagrant Notes](./vagrant.md)
+
