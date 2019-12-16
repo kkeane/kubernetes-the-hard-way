@@ -49,7 +49,7 @@ groupadd etcd
 useradd -d /etc/etcd -s /bin/nologin -g etcd -r etcd
 chown etcd:etcd /var/lib/etcd /etc/etcd
 chmod 0700 /var/lib/etcd
-chmod 0755 etc/etcd
+chmod 0755 /etc/etcd
 ```
 
 - Download the etcd binaries and extract etcd and etcdctl
