@@ -24,6 +24,9 @@ hosts without NAT in between.
 Each host must also have a DNS entry for this IP address. Alternatively, you
 can maintain a /etc/hosts file on each host.
 
+**The worker and cp systems must not have a swap partition!** The kubelet
+service does not like swap.
+
 ## Networks
 
 Kubernetes networking is a beast. This cluster requires four networks:
@@ -36,7 +39,8 @@ hypervisor, or if you are using VirtualBox without Vagrant, you will not have
 this network at all.
 
 When it exists, this will be the default adapter in your virtual machine, and
-have the IP address 10.0.2.15. As you will see, this extra NIC will give us
+have the IP address 10.0.2.15. This will be a NAT network, and the only one
+that can connect to the outside world. As you will see, this extra NIC will give us
 some grief as Kubernetes and the other components assume that the default NIC
 can be used as the infrastructure NIC. It can't because this NIC cannot talk to
 any of the other virtual machines.
@@ -48,10 +52,18 @@ single NIC, that is the infrastructure network. In the case of Vagrant/VirtualBo
 it will generally be the second NIC in the system, not the default one. On my
 system, it works out to always be enp0s8, but this may not be the case for you.
 
-To configure this NIC in a Vagrantfile, you must add the following line to each
-instance (only for VirtualBox - you do not do this for libvirt):
+#### Vagrant with Virtualbox only:
 
-    instance.vm.network "private_network", type: "dhcp"
+Create a host-only network in VirtualBox with the subnet 172.28.128.0/24. Do not
+try to set it up as a NAT network, since having two NAT networks going to the
+same hosts behind the router is non-trivial, to put it mildly.
+You do not need DHCP as all our VMs must have static IP addresses. Be aware that
+as this is a host-only network, it will not have connectivity to the outside
+world, but it will be reachable from the host itself.
+
+In your Vagrantfile, you must add the following line to each instance:
+
+    instance.vm.network "private_network", ip: "<ip address of the system>"
 
 ### The pod network
 
@@ -68,8 +80,7 @@ Each of these /24s will be assigned to one host, and one of the IP addresses,
 usually the first one, will be the IP address for the host's virtual NIC. Each
 pod will receive another IP address from this /24.
 
-Pitfalls
----
+#### Pitfalls
 
 Some network plugins, such as flannel, include hardcoded references to the
 pod network IP address range. In that case, always use 10.244.0.0/16, or you can
