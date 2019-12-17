@@ -143,4 +143,5 @@ The front-end server is completely stateless, and therefore does not need to be
 backed up. If implemented using an automation tool, the easiest disaster
 recovery is to rebuild it.
 
-Next: [Control Plane](./cp.md)
+Next: [The worker nodes](./worker.md)
+

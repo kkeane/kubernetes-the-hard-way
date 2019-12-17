@@ -24,12 +24,12 @@ All steps need to be performed as user root.
 Create a system user group and user kubernetes and create the required
 directories:
 
-    mkdir -p /etc/kubernetes/pki
+    mkdir -p /etc/kubernetes/pki /var/log/kubernetes
     groupadd kubernetes
     useradd -d /etc/kubernetes -s /bin/nologin -g kubernetes -r kubernetes
-    chown -R kubernetes:kubernetes /etc/kubernetes
+    chown -R kubernetes:kubernetes /etc/kubernetes /var/log/kubernetes
     chmod 0755 /etc/kubernetes
-    chmod 0700 /etc/kubernetes/pki
+    chmod 0700 /etc/kubernetes/pki /var/log/kubernetes
 
 Download the binaries you need and place them in /usr/local/sbin
 
@@ -146,7 +146,7 @@ ExecStart=/usr/local/sbin/kube-apiserver \
   --audit-log-maxage=30 \
   --audit-log-maxbackup=3 \
   --audit-log-maxsize=100 \
-  --audit-log-path=/var/log/audit.log \
+  --audit-log-path=/var/log/kubernetes/audit.log \
   --authorization-mode=Node,RBAC \
   --bind-address=0.0.0.0 \
   --client-ca-file=/etc/pki/tls/certs/intermediate-cas.pem \
@@ -214,7 +214,7 @@ changed for your situation.
   server. api/all means, all apis.
 - --service-account-key-file: the encryption key that will be used to encrypt
   and verify service tokens.
-- --servuce-cluster-ip-range: the service network.
+- --service-cluster-ip-range: the service network.
 - --service-node-port-range: the port numbers that services can be visible as.
 - --kubelet-certificate-authority: the CA (or CAs) that can issue the client
   certificates for the kubelet service on worker nodes.
@@ -227,7 +227,149 @@ changed for your situation.
 
 ## The Controller Manager
 
+The controller manager is responsible for verifying the state of the cluster,
+and bringing it into compliance when the actual state does not match the
+specified state. For instance, if it has a manifest for a pod, the controller
+manager will tell the scheduler to actually start that pod.
 
+The controller manager only communicates with the API server, and only as
+client. Therefore, it only needs a single client certificate.
 
-Next: [The worker nodes](./worker.md)
+The client certificate must have the CN system:kube-controller-manager and the
+O system:kube-controller-manager . In Kubernetes, the CN becomes the RBAC user,
+and the O becomes the RBAC group.
+
+Now create a kubeconfig that references this certificate. Do not embed the
+certificates! The kubeconfig file will be in an accessible location, while the
+certificates should be in the highly protected /etc/kubernetes/pki directory.
+
+ TODO: explain how.
+
+Create a systemd unit file as /etc/systemd/system/kube-controller-manager.service:
+
+```
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+
+[Service]
+User=kubernetes
+ExecStart=/usr/local/sbin/kube-controller-manager \
+  --allocate-node-cidrs=true \
+  --cluster-cidr=10.244.0.0/16 \
+  --cluster-name=vagtestcluster \
+  --kubeconfig=/etc/kubernetes/controller-manager.kubeconfig \
+  --controllers=*,bootstrapsigner,tokencleaner \
+  --leader-elect=true \
+  --root-ca-file=/etc/pki/tls/certs/ca.pem \
+  --service-account-private-key-file=/etc/kubernetes/pki/cp1-sa-key.pem \
+  --service-cluster-ip-range=10.32.0.0/24 \
+  --use-service-account-credentials=true \
+  --cluster-signing-cert-file=/etc/kubernetes/pki/cp1-intermediateca.pem \
+  --cluster-signing-key-file=/etc/kubernetes/pki/cp1-intermediateca-key.pem \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+- --allocate-node-cidrs: the cluster manager will allocate the IP addresses on
+  the pod and service networks to each node.
+- --cluster-cidr: the POD network subnet.
+- --cluster-name: name of this cluster.
+- --kubeconfig: name of the kubeconfig file to be used to connect to the API
+  server
+- --controllers: all the various tasks the controller manager should handle.
+  * means 'all the standard ones'. bootstrapsigner allows kubelet bootstrapping
+  with a bearer token instead of a client certificate, which is easier.
+  tokencleaner removes expired bootstrap tokens.
+- --leader-elect: on startup, trigger a leadership election, and assume that
+  this node will become the leader.
+- --root-ca-file: tells the kubelets which CA(s) can legitimately issue
+  intermediate ca files.
+- --service-account-key-file: the encryption key that will be used to encrypt
+  and verify service tokens.
+- --service-cluster-ip-range: the service network.
+- --use-service-account-credentials: if true, uses service account credentials
+  in this node. If false, you must individually grant quite a few roles to
+  the system:kube-controller-manager user.
+- --cluster-signing-*-file: The certificate and key for the intermediate CA.
+
+## The Scheduler
+
+The scheduler decides on which node each pod should be running.
+
+Of the three main control plane services, the scheduler is the simplest to
+configure.
+
+The scheduler only communicates with the API server, and only as
+client. Therefore, it only needs a single client certificate.
+
+The client certificate must have the CN system:kube-scheduler and the
+O system:kube-scheduler . In Kubernetes, the CN becomes the RBAC user,
+and the O becomes the RBAC group.
+
+Now create a kubeconfig that references this certificate. Do not embed the
+certificates! The kubeconfig file will be in an accessible location, while the
+certificates should be in the highly protected /etc/kubernetes/pki directory.
+
+Next, create a scheduler configuration file. While it can configure other
+things, we are using for little more than to tell it the location of the
+kubeconfig file. Create the following file with ownership kubernetes:root
+and permission 0600:
+
+```
+apiVersion: kubescheduler.config.k8s.io/v1alpha1
+kind: KubeSchedulerConfiguration
+clientConnection:
+  kubeconfig: "{{ usd_kubernetes_config_dir }}/scheduler.kubeconfig"
+leaderElection:
+  leaderElect: true
+```
+
+Now create a systemd unit file as /etc/systemd/system/kube-scheduler.service
+with the following content:
+
+```
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+
+[Service]
+User={{ usd_kubernetes_user }}
+ExecStart=/usr/local/sbin/kube-scheduler \
+  --leader-elect=true \
+  --config={{ usd_kubernetes_config_dir }}/kube-scheduler.yaml \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+You can now enable and start all of the services with the following commands:
+
+```
+systemctl daemon-reload
+systemctl enable kube-apiserver kube-controller-manager kube-scheduler
+systemctl start kube-apiserver kube-controller-manager kube-scheduler
+```
+
+Verify that all of the services are running correctly:
+
+```
+systemctl status kube-apiserver
+systemctl status kube-controller-manager
+systemctl status kube-scheduler
+```
+
+## TODO:
+
+- create script to add bootstrap token
+- Smoke check.
+
+Next: [Networking](./networking.md)
 

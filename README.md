@@ -72,8 +72,8 @@ as an issue, or as a pull request.
 - [Public Key Infrastructure](./pki.md)
 - [The etcd cluster](./etcd.md)
 - [The front end server/load balancer](./front.md)
-- [Control Plane](./cp.md)
 - [The worker nodes](./worker.md)
+- [Control Plane](./cp.md)
 - [Networking](./networking.md)
 - [Cluster-wide configuration](./cluster.md)
 

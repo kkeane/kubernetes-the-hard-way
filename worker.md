@@ -10,6 +10,10 @@ component and a container runtime.
 The networking component we use is kube-proxy. This is the "standard" way to
 use Kubernetes, but there are many efforts to use different approaches.
 
+All control plane nodes are also worker nodes, although they generally do not
+run any workloads. Therefore, perform the following tasks on cp1, cp2, worker1
+and worker2.
+
 ## The kubelet service
 
 The kubelet service communicates with the API server. It also instructs the
@@ -40,4 +44,27 @@ There are many different ways to accomplish this. A popular method is to use
 the kube-proxy. Kube-proxy has several different modes of operation. It can
 create iptables rules that masquerade the service IP addresses as Pod IP
 addresses. It can also use ipvs.
+
+## System setup
+
+All steps need to be performed as user root.
+
+Create a system user group and user kubernetes and create the required
+directories:
+
+    mkdir -p /etc/kubernetes/pki
+    groupadd kubernetes
+    useradd -d /etc/kubernetes -s /bin/nologin -g kubernetes -r kubernetes
+    chown -R kubernetes:kubernetes /etc/kubernetes
+    chmod 0755 /etc/kubernetes
+    chmod 0700 /etc/kubernetes/pki
+
+Download the binaries you need and place them in /usr/local/sbin
+
+    curl https://storage.googleapis.com/kubernetes-release/release/v1.16.2/bin/linux/amd64/kubelet -o /usr/local/sbin/kubelet
+    chmod +x /usr/local/sbin/kubelet
+    
+
+
+Next: [Control Plane](./cp.md)
 
