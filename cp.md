@@ -366,6 +366,35 @@ systemctl status kube-controller-manager
 systemctl status kube-scheduler
 ```
 
+## Maintenance
+
+### Disaster recovery
+
+The control plane nodes are stateless, so it is not necessary to back up
+the CP nodes. Disaster recovery simply involves rebuilding a new CP node,
+connecting it to the same etcd cluster. Provide an
+/etc/kubernetes/pki/encryption-config.yaml file with the same secret.
+
+### Certificate rollover
+
+Certificate rollover must be done before the certificates expire. It is a good
+idea to use certificates with a short expiration (3 days to a week), and roll
+over the certificates daily and automatically. This ensures that you will not
+be surprised by the cluster failing when certificates expire.
+
+To perform a certificate rollover, perform the following steps. Only do this
+on one node at a time. This will allow rolling over the certificates with no
+downtime.
+
+- Generate new certificates for all services on this node
+- (Optional) update the operating systems or perform other maintenance tasks
+  as needed.
+- Restart the four services kube-apiserver, kube-controllermanager,
+  kube-scheduler and kubelet.
+- Confirm that the node is back up and running.
+
+Then move on to the next node to perform the same tasks.
+
 ## TODO:
 
 - create script to add bootstrap token
