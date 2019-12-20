@@ -129,6 +129,16 @@ resources:
 
 The secret must match on all of your control plane nodes.
 
+Create an audit policy file /etc/kubernetes/audit-policy.yml with the following
+content:
+
+```
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+```
+
 Now you are ready to set up the API server systemd unit file. Create the
 following file as /etc/systemd/system/kube-apiserver.service:
 
@@ -147,6 +157,7 @@ ExecStart=/usr/local/sbin/kube-apiserver \
   --audit-log-maxbackup=3 \
   --audit-log-maxsize=100 \
   --audit-log-path=/var/log/kubernetes/audit.log \
+  --audit-policy-file=/etc/kubernetes/audit-policy.yml \
   --authorization-mode=Node,RBAC \
   --bind-address=0.0.0.0 \
   --client-ca-file=/etc/pki/tls/certs/intermediate-cas.pem \
@@ -186,8 +197,9 @@ changed for your situation.
 - **--apiserver-count: how many CP nodes do you plan on having?**
 - --audit-log*: This configures where and how an audit log will be stored. An
   audit log lists details about when what type of event happened. These
-  settings do not actually enable audit-logging; you would also have to
-  provide an audit policy.
+  settings do not actually enable audit-logging; you do this by providing
+  an audit policy file.
+- --audit-policy-file: A file that which aspects of auditing should be enabled.
 - --authorization-mode: Allows Node Authentication and RBAC authentication.
   Node authentication allows worker nodes to use a client certificate to
   connect to the API server and join the cluster. We are not actually using
@@ -395,10 +407,99 @@ downtime.
 
 Then move on to the next node to perform the same tasks.
 
-## TODO:
+### Adding a new bootstrap token for worker nodes
 
-- create script to add bootstrap token
-- Smoke check.
+Worker nodes need a bootstrap token to initially authenticate against the
+cluster. This bootstrap token is used to obtain a client certificate, and
+thus join the cluster.
+
+The bootstrap token contains a private and a public part. Unlike most PKI
+systems, the private and public part are completely unrelated; the public part
+only serves as an identifier.
+
+The private part is any 16-digit hexadecimal number. The public part is any
+6-digit hexadecimal number. They are often written as two numbers seperated
+by a decimal point, such as this:
+
+    123456.0123456789abcdef
+
+We will add both parts to the secrets in the cluster here. You must also
+provide the same private and public part to any worker nodes about to join.
+
+For security reasons, bootstrap tokens have a limited validity; you should set
+an expiration date about 24 hours away.
+
+Create a script that takes the public and private keys as two arguments. Name
+it /usr/local/sbin/addbootstraptoken.sh.
+
+```
+#!/bin/bash
+ID=$1
+PRIVATE=$2
+EXPIRATION=$(date -u '--date=tomorrow' '+%Y-%m-%dT%H:%M:%SZ')
+
+echo "Adding bootstrap token ID ${ID}"
+echo "Valid until ${EXPIRATION}"
+kubectl apply -f - <<ENDTOKEN
+apiVersion: v1
+kind: Secret
+metadata:
+  # Name MUST be of form "bootstrap-token-<token id>"
+  name: bootstrap-token-${ID}
+  namespace: kube-system
+
+# Type MUST be 'bootstrap.kubernetes.io/token'
+type: bootstrap.kubernetes.io/token
+stringData:
+  # Human readable description. Optional.
+  description: "The bootstrap token for Kubernetes-the-hard-way."
+
+  # Token ID and secret. Required.
+  token-id: "${ID}"
+  token-secret: "${PRIVATE}"
+
+  # Expiration. Optional.
+  expiration: ${EXPIRATION}
+
+  # Allowed usages.
+  usage-bootstrap-authentication: "true"
+  usage-bootstrap-signing: "true"
+
+  # Extra groups to authenticate the token as. Must start with "system:bootstrappers:"
+  auth-extra-groups: system:bootstrappers:worker,system:bootstrappers:ingress
+ENDTOKEN
+
+```
+
+To generate a bootstrap token, run the following commands:
+
+   PUBLIC=$(head -c 3 /dev/urandom | od -An -t x | cut -c 4-9)
+   PRIVATE=$(head -c 8 /dev/urandom | od -An -t x | tr -d ' ')
+   echo "${PUBLIC}.${PRIVATE}"
+
+Then run
+
+   addbootstraptoken.sh <public> <private>
+
+And configure the same token in the kubelet bootstrap configuration file.
+
+# Perform a smoke check
+
+Verify that at least the basics fundamentally work:
+
+    kubectl get --all-namespaces nodes
+
+should produce a list of all worker nodes, as well as the control plane nodes.
+
+You can also run the following:
+
+    kubectl get --all-namespaces pods -o wide
+
+At this point, there probably will not be any pods. We will be adding them
+shortly. At a minimum, there should be two coredns pods and a kube-flannel
+pod for each worker or control plane node.
+
+Depending on which manifests you added, you may see additional pods.
 
 Next: [Networking](./networking.md)
 
