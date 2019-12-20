@@ -99,6 +99,7 @@ Resources
 - https://kubernetes.io/blog/2018/07/18/11-ways-not-to-get-hacked/
 - https://cloud.google.com/kubernetes-engine/docs/how-to/hardening-your-cluster
 - https://medium.com/@toddrosner/kubernetes-tls-bootstrapping-cf203776abc7
+- https://rancher.com/docs/rancher/v2.x/en/security/hardening-2.3/
 
 ### RBAC
 - https://docs.bitnami.com/kubernetes/how-to/configure-rbac-in-your-kubernetes-cluster/
