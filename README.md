@@ -108,4 +108,6 @@ Resources
 ### Helm and other basic applications
 - https://helm.sh/docs/using_helm/#quickstart-guide
 - https://github.com/kubernetes/dashboard
+- https://metallb.universe.tf/
+- https://github.com/dexidp/dex
 
