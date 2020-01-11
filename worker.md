@@ -1,6 +1,6 @@
 # Kubernetes the hard way - Worker Nodes
 
-# Overview
+## Overview
 
 The worker nodes are where the actual work is done, where the containers are
 running. There are many different options for setting up worker nodes.
@@ -81,7 +81,36 @@ For containerd, we install an RPM. It is located in the official Docker reposito
 
     yum install containerd.io
 
-# Set up the kubelet server
+## Set up the Container runtime
+
+The container runtime is responsible for actually executing the containers. We are
+using containerd, which is part of Docker. Another option is cri-o. cri-o is preferred
+because it is more light-weight, but is currently a bit harder to install.
+
+Obtain the gid of the kubernetes group:
+
+    getent group kubernetes
+
+Edit the containerd configuration file in /etc/containerd/config.toml
+
+    [grpc]
+      address = "/var/run/containerd/containerd.sock"
+      uid=0
+      gid=<kubernetes user group ID>
+    [plugins]
+      [plugins.cri.containerd]
+        snapshotter = "overlayfs"
+        [plugins.cri.containerd.default_runtime]
+          runtime_type = "io.containerd.runtime.v1.linux"
+          runtime_engine = "/bin/runc"
+          runtime_root = ""
+
+Now enable and start (or restart) the containerd service:
+
+    systemctl enable containerd
+    systemctl restart containerd
+
+## Set up the kubelet server
 
 The kubelet server receives instructions from the API server, and executes them
 by using the container runtime to start or stop containers, retrieve log files,
@@ -149,6 +178,91 @@ users:
   user:
     token: 002439.25f718816c0c9343
 ```
+
+Create the /etc/systemd/system/kubelet.service unit file:
+
+( You may need to add --node-ip=<ip address> if your node has multiple NICs)
+
+```
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=containerd.service
+Requires=containerd.service
+
+[Service]
+# User=kubernetes
+ExecStart=/usr/local/sbin/kubelet \
+    --config=/etc/kubernetes/kubelet-config.yaml \
+    --cert-dir=/etc/kubernetes/pki \
+    --container-runtime=remote \
+    --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock \
+    --image-pull-progress-deadline=2m \
+    --kubeconfig=/etc/kubernetes/kubelet.kubeconfig \
+    --bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
+    --network-plugin=cni \
+    --cni-conf-dir=/etc/cni/net.d \
+    --register-node=true \
+    --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+## Set up the kube-proxy service
+
+The kube-proxy service is responsible for setting up the pod and service
+networks.i It needs a client certificate to contact the API server
+
+The client certificate has to be explicitly created with the following parameters
+CN: system:kube-proxy
+O: system:node-proxier
+Hosts:
+  <node IP address>
+  <node FQDN>
+
+Create a kubeconfig file with this certificate as /etc/kubernetes/kube-proxy.kubeconfig
+
+Install the tools for ipvs
+
+    yum install ipvsadm
+
+Create the kube-proxy configuration file as /etc/kubernetes/kubeproxy-config.yaml :
+
+```
+kind: KubeProxyConfiguration
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+clientConnection:
+  kubeconfig: "/etc/kubernetes/kube-proxy.kubeconfig"
+mode: "ipvs"
+clusterCIDR: "10.244.0.0/16"
+```
+
+Create the service unit file as /etc/systemd/system/kube-proxy.service:
+
+```
+[Unit]
+Description=Kubernetes Kube Proxy
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/sbin/kube-proxy \
+--config=/etc/kubernetes/kubeproxy-config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Now enable and start (or restart) the kubelet and kube-proxy services:
+
+    systemctl daemon-reload
+    systemctl enable kubelet kube-proxy
+    systemctl restart kubelet kube-proxy
 
 Next: [Control Plane](./cp.md)
 
